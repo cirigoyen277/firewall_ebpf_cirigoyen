@@ -1,0 +1,125 @@
+/* Archivo styles.css */
+
+/* General */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #ffffff;
+    color: #333;
+}
+
+header {
+    background-color: #ffeb3b; /* Amarillo claro */
+    padding: 20px 0;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.title {
+    margin: 0;
+    font-size: 2.5em;
+    color: #333;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Contenedor principal */
+main {
+    width: 75%; /* 75% del ancho de la pantalla */
+    max-width: 1200px; /* Limitar el ancho máximo */
+    margin: 20px auto; /* Centrar contenido vertical y horizontalmente */
+    padding: 20px; /* Sangría interna */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    background-color: #ffffff; /* Fondo blanco */
+}
+
+/* Botón */
+button {
+    padding: 10px 20px;
+    margin: 15px 0;
+    background-color: #ffeb3b; /* Amarillo */
+    color: #333; /* Texto oscuro */
+    border: none;
+    cursor: pointer;
+    font-size: 1em;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+button:hover {
+    background-color: #fdd835; /* Amarillo más intenso */
+    transform: scale(1.05);
+}
+
+/* Formulario */
+form {
+    margin: 20px 0;
+    padding: 15px;
+    border: 1px solid #ddd;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+input, select {
+    padding: 10px;
+    margin: 10px 0;
+    width: calc(100% - 22px);
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* Tabla */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: #fff;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+table th, table td {
+    padding: 6px 10px; /* Espaciado vertical reducido */
+    text-align: center; /* Centrar el texto en las celdas */
+    border-bottom: 1px solid #ddd;
+}
+
+table th:first-child, table td:first-child {
+    padding-left: 20px; /* Espaciado extra para la primera columna */
+    text-align: left; /* Mantén alineado a la izquierda si prefieres */
+}
+
+table th:last-child, table td:last-child {
+    padding-right: 20px; /* Espaciado extra para la última columna */
+    text-align: center; /* Puedes cambiar a 'right' si prefieres */
+}
+
+
+table th {
+    background-color: #ffeb3b; /* Amarillo */
+    color: #333; /* Texto oscuro */
+    font-weight: bold;
+}
+
+table tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* Ajustes de espaciado adicional */
+section {
+    margin-bottom: 40px; /* Separar secciones */
+}
+
+h2 {
+    color: #333;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #ffeb3b;
+    padding-bottom: 5px;
+}

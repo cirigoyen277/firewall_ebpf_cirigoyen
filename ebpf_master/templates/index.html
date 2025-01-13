@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIREBPF</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script>
+
+        async function updateAgentHostname() {
+            try {
+                const response = await fetch('/get_agent_hostname');
+                if (!response.ok) {
+                    throw new Error('Error al obtener el hostname');
+                }
+
+                const data = await response.json();
+                document.getElementById('agent-hostname').textContent = `Agent: ${data.hostname}`;
+            } catch (error) {
+                console.error('Error al actualizar el hostname:', error);
+                document.getElementById('agent-hostname').textContent = 'Agent: Error loading hostname';
+            }
+        }
+
+        // Llama a la función al cargar la página
+        updateAgentHostname();
+
+        async function listRules() {
+            try {
+                const response = await fetch('/list_rules');
+                const data = await response.json();
+
+                // Limpiar contenido previo
+                const tableBody = document.getElementById('rules-table-body');
+                tableBody.innerHTML = '';
+
+                // Procesar las reglas permitidas
+                data.rules.allowed.forEach(rule => {
+                    const row = `
+                        <tr>
+                            <td>Permitir</td>
+                            <td>${rule.ip_source || '-'}</td>
+                            <td>${rule.port_dst || '-'}</td>
+                            <td>${rule.proto ? rule.proto.toUpperCase() : '-'}</td>
+                            <td>
+                                <button onclick="deleteRule('allow', '${rule.ip_source}', ${rule.port_dst || null}, '${rule.proto || null}')">
+                                    Delete
+                                </button>
+                            </td>
+                        </tr>`;
+                    tableBody.innerHTML += row;
+                });
+
+                // Procesar las reglas bloqueadas
+                data.rules.blocked.forEach(rule => {
+                    const row = `
+                        <tr>
+                            <td>Bloquear</td>
+                            <td>${rule.ip_source || '-'}</td>
+                            <td>${rule.port_dst || '-'}</td>
+                            <td>${rule.proto ? rule.proto.toUpperCase() : '-'}</td>
+                            <td>
+                                <button onclick="deleteRule('block', '${rule.ip_source}', ${rule.port_dst || null}, '${rule.proto || null}')">
+                                    Delete
+                                </button>
+                            </td>
+                        </tr>`;
+                    tableBody.innerHTML += row;
+                });
+
+            } catch (error) {
+                console.error('Error al obtener las reglas:', error);
+                alert('Error al listar las reglas.');
+            }
+        }
+
+        async function addRule(event) {
+            event.preventDefault();
+
+            const formData = new FormData(event.target);
+            const data = {
+                action: formData.get('action'),
+                ip_source: formData.get('ip_source') || null,
+                port_dst: formData.get('port_dst') || null,
+                proto: formData.get('proto') || null,
+            };
+
+            try {
+                const response = await fetch('/add_rule', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+
+                const result = await response.json();
+                alert(result.message || result.error);
+                listRules(); // Actualizar la tabla tras añadir una regla
+            } catch (error) {
+                console.error('Error al añadir la regla:', error);
+                alert('Error al añadir la regla.');
+            }
+        }
+
+        async function deleteRule(action, ip_source, port_dst, proto) {
+            try {
+                const response = await fetch('/delete_rule', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action,
+                        ip_source: ip_source !== '-' ? ip_source : null,
+                        port_dst: port_dst !== null ? port_dst : null,
+                        proto: proto !== 'null' ? proto.toLowerCase() : null
+                    })
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    alert(result.message);
+                    listRules(); // Refresca la lista después de eliminar
+                } else {
+                    alert(`Error al eliminar la regla: ${result.error}`);
+                }
+            } catch (err) {
+                console.error('Error al eliminar regla:', err);
+            }
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <h1 class="title">FIREBPF 🐝🔫</h1>
+        <p id="agent-hostname" style="font-size: 1.2em; color: #555;">Agent: Loading...</p>
+    </header>
+
+    <main>
+        <button onclick="listRules()">Listar Reglas</button>
+
+        <section>
+            <h2>Reglas Activas</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Acción</th>
+                        <th>IP Fuente</th>
+                        <th>Puerto Destino</th>
+                        <th>Protocolo</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="rules-table-body">
+                    <!-- Las reglas aparecerán aquí -->
+                </tbody>
+            </table>
+        </section>
+
+        <section>
+            <h2>Añadir Regla</h2>
+            <form onsubmit="addRule(event)">
+                <label for="action">Acción:</label>
+                <select name="action" id="action" required>
+                    <option value="block">Bloquear</option>
+                    <option value="allow">Permitir</option>
+                </select><br>
+
+                <label for="ip_source">Source IP (none = ALL):</label>
+                <input type="text" id="ip_source" name="ip_source" placeholder="0.0.0.0"><br>
+
+                <label for="port_dst">Destination Port (none = ALL):</label>
+                <input type="number" id="port_dst" name="port_dst" placeholder="ALL" min="1" max="65535"><br>
+
+                <label for="proto">Protocol (none = ALL):</label>
+                <select name="proto" id="proto">
+                    <option value="">ALL</option>
+                    <option value="tcp">TCP</option>
+                    <option value="udp">UDP</option>
+                    <option value="icmp">ICMP</option>
+                </select><br>
+
+                <button type="submit">Añadir Regla</button>
+            </form>
+        </section>
+    </main>
+</body>
+</html>
