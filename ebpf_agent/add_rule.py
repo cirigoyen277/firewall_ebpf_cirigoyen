@@ -21,10 +21,6 @@ bpf_program = """
 #include <linux/udp.h>
 
 
-struct rule_key {
-    u32 ip_src;
-    u16 port_dst;
-};
 struct rule_key_proto {
     u8 proto;
 };
@@ -80,10 +76,6 @@ int block_packet(struct xdp_md *ctx) {
     key3.ip_src = ip->saddr;
     key3.port_dst = tcp->dest;
 
-    struct rule_key key = {};
-    key.ip_src = ip->saddr;
-    key.port_dst = tcp->dest;
-
     //////// CHECK WHITELIST ////////
     u32 *allow_value1 = allowed_rules1.lookup(&key1);
     if (allow_value1) {
@@ -116,8 +108,8 @@ int block_packet(struct xdp_md *ctx) {
         return XDP_DROP; // Si está en la darklist, bloquea el tráfico
     }
 
-    // Si nada coincide, se permite el paso
-    return XDP_PASS;
+    // Por defecto, se bloquea el paso
+    return XDP_DROP;
 
     bpf_trace_printk("Paquete analizado: src IP %x, dst port %d\\n", ip->saddr, tcp->dest);
 }
@@ -164,9 +156,11 @@ def ip_to_u32_inverted(ip_str):
     ip_inverted = ip_bytes[::-1]  # Invierte los bytes
     return struct.unpack("!I", ip_inverted)[0]  # Convierte los bytes invertidos a u32
 
-# Convertir dirección IP a u32
-def ip_to_u32(ip_str):
-    return struct.unpack("!I", socket.inet_aton(ip_str))[0]
+PROTO_MAP = {
+    "tcp": 6,
+    "udp": 17,
+    "icmp": 1
+}
 
 # Leer las direcciones IP de la base de datos y exportarlas a un archivo de texto
 def generar_whitelist_sip():
@@ -196,15 +190,13 @@ def generar_whitelist_sip():
     finally:
         conexion.close()  # Cerrar la conexión a la base de datos
 
-
-generar_whitelist_sip()
-whitelist_sip_file = "whitelist_sip.txt"
-whitelist_all_file = "whitelist_all.txt"
-
 # Configuración de reglas predeterminadas
 default_allowed_rules = [
     {"proto": "udp", "ip_source": "100.100.100.100",  "port_dst": 22},
 ]
+
+generar_whitelist_sip()
+whitelist_sip_file = "whitelist_sip.txt"
 
 if os.path.exists(whitelist_sip_file):
     with open(whitelist_sip_file, "r") as file:
@@ -215,6 +207,15 @@ if os.path.exists(whitelist_sip_file):
 else:
     print(f"El archivo '{whitelist_sip_file}' no existe. No se cargaron reglas adicionales.")
 
+# Cargar reglas predeterminadas en el mapa allowed_rules
+for rule in default_allowed_rules:
+    ip_src = ip_to_u32_inverted(rule["ip_source"])
+    port_dst = ctypes.c_uint16(socket.htons(rule["port_dst"]))
+    proto = ctypes.c_uint8(PROTO_MAP[rule["proto"].lower()])
+    key = allowed_rules3.Key(proto, ip_src, port_dst)
+    allowed_rules3[key] = ctypes.c_uint32(1)
+
+whitelist_all_file = "whitelist_all.txt"
 if os.path.exists(whitelist_all_file):
     with open(whitelist_all_file, "r") as file:
         for line in file:
@@ -226,23 +227,10 @@ if os.path.exists(whitelist_all_file):
 else:
     print(f"El archivo '{whitelist_all_file}' no existe. No se cargaron reglas adicionales.")
 
-PROTO_MAP = {
-    "tcp": 6,
-    "udp": 17,
-    "icmp": 1
-}
-
-# Cargar reglas predeterminadas en el mapa allowed_rules
-for rule in default_allowed_rules:
-    ip_src = ip_to_u32_inverted(rule["ip_source"])
-    port_dst = ctypes.c_uint16(socket.htons(rule["port_dst"]))
-    proto = ctypes.c_uint8(PROTO_MAP[rule["proto"].lower()])
-    key = allowed_rules3.Key(proto, ip_src, port_dst)
-    allowed_rules3[key] = ctypes.c_uint32(1)
-
 # Regla por defecto para permitir todo el ICMP
 key = ctypes.c_uint8(PROTO_MAP["icmp"])
 allowed_rules1[key] = ctypes.c_uint32(1)
+
 
 ############# API FLASK ##############
 

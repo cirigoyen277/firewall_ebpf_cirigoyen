@@ -65,14 +65,14 @@ DB_CONFIG = {
     'port': '5432'
 }
 
-# Dirección de la API de reglas (modificar según sea necesario)
-API_BASE_URL = "https://192.168.66.160:5027"
-
 # Función para obtener la conexión a la base de datos
 def get_db_connection():
     return psycopg2.connect(**DB_CONFIG)
 
-# Decorador para proteger rutas
+# Dirección de la API de reglas (modificar según sea necesario)
+API_BASE_URL = "https://192.168.66.160:5027"
+
+# Decorador para proteger rutas - No aplicado por ahora
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -118,9 +118,8 @@ def login_page():
     # Si es una petición GET, renderizar el formulario de login
     return render_template('login.html')
 
-# Ruta para cerrar sesión
+# Ruta para cerrar sesión - No aplicado por ahora
 @app.route('/logout', methods=['GET'])
-#@login_required
 def logout():
     session.pop('user_id', None)
     return redirect(url_for('login_page'))
@@ -131,12 +130,10 @@ def index():
     return render_template('index.html')
 
 @app.route('/login_ok')
-#@login_required
 def index2():
     return render_template('index.html')
 
 @app.route('/list_rules', methods=['GET'])
-#@login_required
 def list_rules():
     try:
         # Llamada al endpoint de la API
@@ -147,7 +144,6 @@ def list_rules():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/add_rule', methods=['POST'])
-#@login_required
 def add_rule():
     try:
         # Recibir datos del formulario
@@ -199,7 +195,6 @@ def add_rule():
 
 
 @app.route('/delete_rule', methods=['POST'])
-#@login_required
 def delete_rule():
     try:
         # Obtener los datos enviados en el cuerpo de la solicitud
@@ -232,10 +227,6 @@ def delete_rule():
             # Enviar la solicitud POST si la validación es exitosa
             response = requests.post(f"{API_BASE_URL}/delete_rule", json=payload, verify='cert_back.pem')
 
-        # Devolver la respuesta de la API
-
-        # Hacer la solicitud a la API de reglas
-
         # Manejar respuesta del backend
         try:
             response_data = response.json()  # Intentar parsear la respuesta JSON
@@ -259,10 +250,9 @@ def delete_rule():
 def get_agent_hostname():
     try:
         hostname = socket.gethostname()  # Obtiene el hostname del sistema
-        return jsonify({"hostname": hostname}), 200
+        return jsonify({"hostname": 'firewall-ebpf-test.bts.io'}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5028, ssl_context=('cert_front.pem', 'key_front.pem'))
